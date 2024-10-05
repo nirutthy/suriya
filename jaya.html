@@ -1,85 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rental EV Mobility</title>
+    <title>Rental EV Mobility with Map Integration</title>
     <style>
         body {
-            background: linear-gradient(135deg, #6a11cb, #ff7e5f, #6a11cb, #ff7e5f); /* Bluish-pink gradient */
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
+            background: linear-gradient(135deg, #6a11cb, #ff7e5f); /* Bluish-pink gradient */
             font-family: Arial, sans-serif;
-            color: #f5f5f5;
-            margin: 0;
-            padding: 0;
-        }
-
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            color: #fff;
+            padding: 20px;
         }
 
         h1, h2 {
             color: #ffcc00;
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
-        }
-
-        hr {
-            border: 1px solid #ffcc00;
-            width: 80%;
         }
 
         table {
             margin-top: 20px;
-            border-collapse: collapse;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
         }
 
         td {
             padding: 10px;
-            font-size: 16px;
         }
 
-        input, select {
-            padding: 8px;
-            font-size: 14px;
-            border: 1px solid #ffcc00;
-            border-radius: 4px;
-            background: rgba(255, 255, 255, 0.8);
-            color: #333;
-        }
-
-        a, button {
-            color: #ffffff;
-            background-color: #ffcc00;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 4px;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.3s;
-            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        a:hover, button:hover {
-            background-color: #e6b800;
-            transform: translateY(-3px);
+        input, select, button {
+            padding: 10px;
+            margin-top: 10px;
+            width: 100%;
         }
 
         #qrCodeContainer {
-            display: none; /* Hidden until the user clicks "CLICK HERE TO PAY" */
+            display: none; /* Hidden until user clicks "CLICK HERE TO PAY" */
         }
 
-        img {
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        #map {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+            display: none; /* Hidden until form is submitted */
+        }
+
+        #locationButton {
+            margin-top: 10px;
         }
     </style>
+
+    <!-- Leaflet CSS for map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    
+    <!-- Leaflet JS for map -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
+    <!-- Leaflet Routing Machine for routing -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+
     <script>
         function validateForm() {
             const name = document.getElementById('name').value;
@@ -95,7 +71,7 @@
             }
 
             if (fromLocation === toLocation) {
-                alert("FROM LOCATION and TO LOCATION cannot be the same. Please select different locations.");
+                alert("FROM LOCATION and TO LOCATION cannot be the same.");
                 return false;
             }
 
@@ -110,113 +86,152 @@
                 return;
             }
 
-            // Generate a random 6-digit OTP
             const otp = Math.floor(100000 + Math.random() * 900000);
             document.getElementById('otp').value = otp;
             alert("OTP has been sent to your phone number: " + phone);
         }
 
         function calculateSOC() {
-            const soc = Math.floor(Math.random() * (100 - 50 + 1)) + 50; // Random SOC between 50 and 100
+            const soc = Math.floor(Math.random() * (100 - 50 + 1)) + 50;
             document.getElementById('soc').value = soc + "%";
             const amount = soc * 2;
             document.getElementById('amount').value = amount + " INR";
-            
-            // Calculate remaining SOC as 100 - calculated SOC
             const remainingSoc = 100 - soc;
             document.getElementById('remainingSoc').value = remainingSoc + "%";
         }
 
         function showQRCode() {
             if (validateForm()) {
-                // Show the QR code after validation
                 document.getElementById('qrCodeContainer').style.display = 'block';
+                initializeMap();
+                document.getElementById('map').style.display = 'block';
             }
+        }
+
+        function initializeMap() {
+            // Corrected coordinates for Thiagarajar College of Engineering (TCE), Thiruparankundram, Madurai
+            const latitude = 9.9116;
+            const longitude = 78.1028;
+
+            const map = L.map('map').setView([latitude, longitude], 15);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            // Place marker for TCE
+            L.marker([latitude, longitude]).addTo(map)
+                .bindPopup('Thiagarajar College of Engineering (TCE), Madurai')
+                .openPopup();
+
+            // Add routing between locations (example)
+            L.Routing.control({
+                waypoints: [
+                    L.latLng(9.9116, 78.1028), // TCE
+                    L.latLng(9.9391, 78.1217)  // Another place in Madurai
+                ],
+                routeWhileDragging: true
+            }).addTo(map);
+
+            // Enable live location tracking
+            map.locate({setView: true, maxZoom: 16});
+
+            function onLocationFound(e) {
+                const radius = e.accuracy / 2;
+                L.marker(e.latlng).addTo(map)
+                    .bindPopup("You are within " + radius + " meters from this point").openPopup();
+                L.circle(e.latlng, radius).addTo(map);
+            }
+
+            map.on('locationfound', onLocationFound);
+
+            // Handle location errors
+            function onLocationError(e) {
+                alert(e.message);
+            }
+
+            map.on('locationerror', onLocationError);
+
+            // Ensure the map resizes properly after showing
+            setTimeout(function () {
+                map.invalidateSize();
+            }, 400);
         }
     </script>
 </head>
-<body>
-    <center>
-        <h1>RENTAL EV MOBILITY 🛵</h1>
-        <h2>LEADING TO BETTER FUTURE</h2>
-    </center>
-    <hr>
-    <center>
-        <form onsubmit="return false;">
-            <table>
-                <tr>
-                    <td>NAME:</td>
-                    <td><input type="text" id="name" placeholder="Enter Your Name"></td>
-                </tr>
-                <tr>
-                    <td>User id:</td>
-                    <td><input type="text" id="userId" placeholder="Enter user id"></td>
-                </tr>
-                <tr>
-                    <td>ENTER PHONE NUMBER:</td>
-                    <td><input type="number" id="phone" placeholder="Enter phone number"></td>
-                </tr>
-                <tr>
-                    <td></td>
-                    <td>
-                        <button type="button" onclick="generateOTP()">Generate OTP</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>ENTER OTP:</td>
-                    <td><input type="number" id="otp" placeholder="Sent to your phone number"></td>
-                </tr>
-                <tr>
-                    <td>DEPARTURE:</td> 
-                    <td>
-                        <select id="fromLocation">
-                            <option>BUS STOP</option>
-                            <option>MAIN CANTEEN (MC)</option>
-                            <option>BACK GATE</option>
-                            <option>LADIES HOSTEL</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td>ARRIVAL:</td> 
-                    <td>
-                        <select id="toLocation">
-                            <option>BUS STOP</option>
-                            <option>MAIN CANTEEN (MC)</option>
-                            <option>BACK GATE</option>
-                            <option>LADIES HOSTEL</option>
-                        </select>
-                    </td>
-                </tr>
-                <tr>
-                    <td>CALCULATED SOC:</td>
-                    <td><input type="text" id="soc" readonly></td>
-                </tr>
-                <tr>
-                    <td>REMAINING SOC:</td>
-                    <td><input type="text" id="remainingSoc" readonly></td>
-                </tr>
-                <tr>
-                    <td>AMOUNT TO BE PAID:</td>
-                    <td><input type="text" id="amount" readonly></td>
-                </tr>
-            </table>
-            <h2><a href="#" onclick="showQRCode()">CLICK HERE TO PAY</a></h2>
-        </form>
-        
-        <!-- QR Code Container -->
-        <div id="qrCodeContainer">
-            <h2>Scan the QR Code to Pay</h2>
-            <!-- QR Code for UPI payment -->
-            <img src="qr.jpg" width="2000" alt="QR code for payment">
-        </div>
 
-        <h3>FOR ANY QUERIES</h3>
-        <h3>CONTACT: 9940239817 | 9944729153 | 9677775764</h3>
-    </center>
-    <hr>
-    <center>
-        <img src="scooty.webp" width="200">
-    </center>
+<body>
+    <h1>Rental EV Mobility 🛵</h1>
+    <h2>Leading to a Better Future</h2>
+
+    <form onsubmit="return false;">
+        <table>
+            <tr>
+                <td>Name:</td>
+                <td><input type="text" id="name" placeholder="Enter Your Name"></td>
+            </tr>
+            <tr>
+                <td>User ID:</td>
+                <td><input type="text" id="userId" placeholder="Enter User ID"></td>
+            </tr>
+            <tr>
+                <td>Phone Number:</td>
+                <td><input type="number" id="phone" placeholder="Enter Phone Number"></td>
+            </tr>
+            <tr>
+                <td></td>
+                <td><button type="button" onclick="generateOTP()">Generate OTP</button></td>
+            </tr>
+            <tr>
+                <td>Enter OTP:</td>
+                <td><input type="number" id="otp" placeholder="OTP Sent to Phone"></td>
+            </tr>
+            <tr>
+                <td>From Location:</td>
+                <td>
+                    <select id="fromLocation">
+                        <option>BUS STOP</option>
+                        <option>MAIN CANTEEN (MC)</option>
+                        <option>BACK GATE</option>
+                        <option>LADIES HOSTEL</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>To Location:</td>
+                <td>
+                    <select id="toLocation">
+                        <option>BUS STOP</option>
+                        <option>MAIN CANTEEN (MC)</option>
+                        <option>BACK GATE</option>
+                        <option>LADIES HOSTEL</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>Calculated SOC:</td>
+                <td><input type="text" id="soc" readonly></td>
+            </tr>
+            <tr>
+                <td>Amount:</td>
+                <td><input type="text" id="amount" readonly></td>
+            </tr>
+            <tr>
+                <td>Remaining SOC:</td>
+                <td><input type="text" id="remainingSoc" readonly></td>
+            </tr>
+            <tr>
+                <td colspan="2"><button type="button" onclick="showQRCode()">Click Here to Pay</button></td>
+            </tr>
+        </table>
+    </form>
+
+    <div id="qrCodeContainer">
+        <h2>Scan to Pay</h2>
+        <img src="qr.jpg" width="200" alt="QR Code for Payment">
+    </div>
+
+    <div id="map"></div>
 </body>
+
 </html>

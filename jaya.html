@@ -4,79 +4,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rental EV Mobility with Map Integration</title>
+    <title>Rental EV Mobility System</title>
     <style>
         body {
-            background: linear-gradient(135deg, #6a11cb, #ff7e5f); /* Bluish-pink gradient */
+            background-color: #f0f0f0; /* Lightest shade of gray */
             font-family: Arial, sans-serif;
-            color: #fff;
+            color: #333; /* Dark gray text */
             padding: 20px;
+            text-align: center;
         }
 
-        h1, h2 {
-            color: #ffcc00;
+        h1,
+        h2 {
+            color: #000000; /* Bold black color for titles */
+            font-weight: bold;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 10px;
+            width: 100%;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            font-size: 16px;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        input[type="number"] {
+            background-color: #f2f2f2; /* Light gray input fields */
+            color: #333;
+        }
+
+        button {
+            background-color: #d3d3d3; /* Light gray button */
+            color: #333;
+            cursor: pointer;
+            font-size: 18px;
+            width: 50%;
+        }
+
+        button:hover {
+            background-color: #c0c0c0; /* Darker gray on hover */
         }
 
         table {
-            margin-top: 20px;
-        }
-
-        td {
-            padding: 10px;
-        }
-
-        input, select, button {
-            padding: 10px;
-            margin-top: 10px;
             width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+
+        th {
+            background-color: #d3d3d3; /* Light gray header */
+            color: #333;
         }
 
         #qrCodeContainer {
-            display: none; /* Hidden until user clicks "CLICK HERE TO PAY" */
+            margin-top: 20px;
         }
 
         #map {
             width: 100%;
             height: 400px;
             margin-top: 20px;
-            display: none; /* Hidden until form is submitted */
-        }
-
-        #locationButton {
-            margin-top: 10px;
         }
     </style>
 
-    <!-- Leaflet CSS for map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
-    
-    <!-- Leaflet JS for map -->
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-
-    <!-- Leaflet Routing Machine for routing -->
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
-
     <script>
-        function validateForm() {
-            const name = document.getElementById('name').value;
-            const userId = document.getElementById('userId').value;
-            const phone = document.getElementById('phone').value;
-            const otp = document.getElementById('otp').value;
-            const fromLocation = document.getElementById('fromLocation').value;
-            const toLocation = document.getElementById('toLocation').value;
+        function showUserPage() {
+            document.getElementById('welcomePage').classList.add('hidden');
+            document.getElementById('userPage').classList.remove('hidden');
+        }
 
-            if (name === "" || userId === "" || phone === "" || otp === "") {
-                alert("Please fill in all fields.");
-                return false;
+        function showAdminLoginPage() {
+            document.getElementById('welcomePage').classList.add('hidden');
+            document.getElementById('adminLoginPage').classList.remove('hidden');
+        }
+
+        function validateAdmin() {
+            const adminName = document.getElementById('adminName').value.toLowerCase();
+            const adminPassword = document.getElementById('adminPassword').value;
+
+            const validAdmins = ["nivetha", "athisha", "jeya suriya"];
+            const validPassword = "65598";
+
+            if (validAdmins.includes(adminName) && adminPassword === validPassword) {
+                document.getElementById('adminLoginPage').classList.add('hidden');
+                document.getElementById('adminPage').classList.remove('hidden');
+            } else {
+                alert("Invalid credentials. Please try again.");
             }
-
-            if (fromLocation === toLocation) {
-                alert("FROM LOCATION and TO LOCATION cannot be the same.");
-                return false;
-            }
-
-            calculateSOC();
-            return true;
         }
 
         function generateOTP() {
@@ -88,28 +127,46 @@
 
             const otp = Math.floor(100000 + Math.random() * 900000);
             document.getElementById('otp').value = otp;
-            alert("OTP has been sent to your phone number: " + phone);
+            alert("OTP sent to your phone number.");
         }
 
         function calculateSOC() {
             const soc = Math.floor(Math.random() * (100 - 50 + 1)) + 50;
             document.getElementById('soc').value = soc + "%";
-            const amount = soc * 2;
-            document.getElementById('amount').value = amount + " INR";
-            const remainingSoc = 100 - soc;
-            document.getElementById('remainingSoc').value = remainingSoc + "%";
+            document.getElementById('amount').value = (soc * 2) + " INR";
+            document.getElementById('remainingSoc').value = (100 - soc) + "%";
         }
 
         function showQRCode() {
             if (validateForm()) {
                 document.getElementById('qrCodeContainer').style.display = 'block';
                 initializeMap();
-                document.getElementById('map').style.display = 'block';
             }
         }
 
+        function validateForm() {
+            const name = document.getElementById('name').value;
+            const userId = document.getElementById('userId').value;
+            const phone = document.getElementById('phone').value;
+            const otp = document.getElementById('otp').value;
+            const fromLocation = document.getElementById('fromLocation').value;
+            const toLocation = document.getElementById('toLocation').value;
+
+            if (!name || !userId || !phone || !otp) {
+                alert("Please fill in all fields.");
+                return false;
+            }
+
+            if (fromLocation === toLocation) {
+                alert("From and To locations cannot be the same.");
+                return false;
+            }
+
+            calculateSOC();
+            return true;
+        }
+
         function initializeMap() {
-            // Corrected coordinates for Thiagarajar College of Engineering (TCE), Thiruparankundram, Madurai
             const latitude = 9.9116;
             const longitude = 78.1028;
 
@@ -119,12 +176,10 @@
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             }).addTo(map);
 
-            // Place marker for TCE
             L.marker([latitude, longitude]).addTo(map)
                 .bindPopup('Thiagarajar College of Engineering (TCE), Madurai')
                 .openPopup();
 
-            // Add routing between locations (example)
             L.Routing.control({
                 waypoints: [
                     L.latLng(9.9116, 78.1028), // TCE
@@ -133,105 +188,121 @@
                 routeWhileDragging: true
             }).addTo(map);
 
-            // Enable live location tracking
-            map.locate({setView: true, maxZoom: 16});
+            map.locate({ setView: true, maxZoom: 16 });
 
-            function onLocationFound(e) {
+            map.on('locationfound', function (e) {
                 const radius = e.accuracy / 2;
                 L.marker(e.latlng).addTo(map)
                     .bindPopup("You are within " + radius + " meters from this point").openPopup();
                 L.circle(e.latlng, radius).addTo(map);
-            }
+            });
 
-            map.on('locationfound', onLocationFound);
-
-            // Handle location errors
-            function onLocationError(e) {
+            map.on('locationerror', function (e) {
                 alert(e.message);
-            }
+            });
 
-            map.on('locationerror', onLocationError);
-
-            // Ensure the map resizes properly after showing
             setTimeout(function () {
                 map.invalidateSize();
             }, 400);
         }
     </script>
+
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <!-- Leaflet JS for Map -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Leaflet Routing Machine -->
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+
 </head>
 
 <body>
-    <h1>Rental EV Mobility 🛵</h1>
-    <h2>Leading to a Better Future</h2>
 
-    <form onsubmit="return false;">
-        <table>
-            <tr>
-                <td>Name:</td>
-                <td><input type="text" id="name" placeholder="Enter Your Name"></td>
-            </tr>
-            <tr>
-                <td>User ID:</td>
-                <td><input type="text" id="userId" placeholder="Enter User ID"></td>
-            </tr>
-            <tr>
-                <td>Phone Number:</td>
-                <td><input type="number" id="phone" placeholder="Enter Phone Number"></td>
-            </tr>
-            <tr>
-                <td></td>
-                <td><button type="button" onclick="generateOTP()">Generate OTP</button></td>
-            </tr>
-            <tr>
-                <td>Enter OTP:</td>
-                <td><input type="number" id="otp" placeholder="OTP Sent to Phone"></td>
-            </tr>
-            <tr>
-                <td>From Location:</td>
-                <td>
-                    <select id="fromLocation">
-                        <option>BUS STOP</option>
-                        <option>MAIN CANTEEN (MC)</option>
-                        <option>BACK GATE</option>
-                        <option>LADIES HOSTEL</option>
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td>To Location:</td>
-                <td>
-                    <select id="toLocation">
-                        <option>BUS STOP</option>
-                        <option>MAIN CANTEEN (MC)</option>
-                        <option>BACK GATE</option>
-                        <option>LADIES HOSTEL</option>
-                    </select>
-                </td>
-            </tr>
-            <tr>
-                <td>Calculated SOC:</td>
-                <td><input type="text" id="soc" readonly></td>
-            </tr>
-            <tr>
-                <td>Amount:</td>
-                <td><input type="text" id="amount" readonly></td>
-            </tr>
-            <tr>
-                <td>Remaining SOC:</td>
-                <td><input type="text" id="remainingSoc" readonly></td>
-            </tr>
-            <tr>
-                <td colspan="2"><button type="button" onclick="showQRCode()">Click Here to Pay</button></td>
-            </tr>
-        </table>
-    </form>
-
-    <div id="qrCodeContainer">
-        <h2>Scan to Pay</h2>
-        <img src="qr.jpg" width="200" alt="QR Code for Payment">
+    <!-- Welcome Page -->
+    <div id="welcomePage" class="container">
+        <h1>Welcome to Rental EV Mobility</h1>
+        <h2>Select Your Role</h2>
+        <button onclick="showUserPage()">User</button>
+        <button onclick="showAdminLoginPage()">Admin</button>
     </div>
 
-    <div id="map"></div>
+    <!-- User Page -->
+    <div id="userPage" class="hidden container">
+        <h1>Rental EV Mobility 🛵</h1>
+        <h2>Fill Your Details</h2>
+        <form>
+            <input type="text" id="name" placeholder="Enter Your Name">
+            <input type="text" id="userId" placeholder="Enter User ID">
+            <input type="number" id="phone" placeholder="Enter Phone Number">
+            <button type="button" onclick="generateOTP()">Generate OTP</button>
+            <input type="number" id="otp" placeholder="Enter OTP">
+            <select id="fromLocation">
+                <option value="" disabled selected>From Location</option>
+                <option>BUS STOP</option>
+                <option>MAIN CANTEEN (MC)</option>
+                <option>BACK GATE</option>
+                <option>LADIES HOSTEL</option>
+            </select>
+            <select id="toLocation">
+                <option value="" disabled selected>To Location</option>
+                <option>BUS STOP</option>
+                <option>MAIN CANTEEN (MC)</option>
+                <option>BACK GATE</option>
+                <option>LADIES HOSTEL</option>
+            </select>
+            <input type="text" id="soc" placeholder="Calculated SOC" readonly>
+            <input type="text" id="amount" placeholder="Amount" readonly>
+            <input type="text" id="remainingSoc" placeholder="Remaining SOC" readonly>
+            <button type="button" onclick="showQRCode()">Click Here to Pay</button>
+        </form>
+
+        <div id="qrCodeContainer" class="hidden">
+            <h2>Your QR Code</h2>
+            <img id="qrCode" src="path_to_qr_code_image.png" alt="QR Code">
+            <h2>Map</h2>
+            <div id="map"></div>
+        </div>
+    </div>
+
+    <!-- Admin Login Page -->
+    <div id="adminLoginPage" class="hidden container">
+        <h1>Admin Login</h1>
+        <input type="text" id="adminName" placeholder="Admin Name">
+        <input type="password" id="adminPassword" placeholder="Password">
+        <button type="button" onclick="validateAdmin()">Login</button>
+    </div>
+
+    <!-- Admin Page -->
+    <div id="adminPage" class="hidden container">
+        <h1>Admin Dashboard</h1>
+        <h2>User Information</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Bike Location</th>
+                    <th>Batter State of Charge (SOC)</th>
+                    <th>Battery Condition</th>
+                    <th>Bike Condition</th>
+                    <th>Travel Destination</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>U1234</td>
+                    <td>John Doe</td>
+                    <td>Main Canteen</td>
+                    <td> id="soc" readonly></td>
+                    <td>Good</td>
+                    <td>Operational</td>
+                    <td>Ladies Hostel</td>
+                </tr>
+                <!-- Add more user entries as needed -->
+            </tbody>
+        </table>
+    </div>
+
 </body>
 
 </html>
